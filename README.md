@@ -1,7 +1,12 @@
-## Install opencv
+## Install git lfs before cloning
 
-    pip install --user opencv-python
+    sudo dnf install git-lfs
+    git clone https://github.com/h908714124/hello-hough.git
+
+## Install dependencies
+
+    pip install --user pillow opencv-python tensorflow numpy matplotlib
 
 ## Run
 
-    python hough.py --image=easy.png
+    python hough.py --image=test/data/board.png

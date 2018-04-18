@@ -12,6 +12,35 @@ from hello.im_debug import show
 tf.enable_eager_execution(config=None, device_policy=None)
 
 
+def add_horizontal_line(img, rho):
+  factor = 500
+  x1 = int(-factor)
+  y = int(rho)
+  x2 = int(factor)
+  cv2.line(img, (x1, y), (x2, y), (245, 0, 0), 1)
+
+
+def add_vertical_line(img, rho):
+  factor = 500
+  x = int(rho)
+  y1 = int(factor)
+  y2 = int(- factor)
+  cv2.line(img, (x, y1), (x, y2), (0, 245, 0), 1)
+
+
+def split_lines(lines):
+  horizontal_lines = np.zeros(np.shape(lines)[0])
+  vertical_lines = np.zeros(np.shape(lines)[0])
+  for index, x in enumerate(lines):
+    print("x:", x)
+    print("index:", index)
+    if x[1] < 0.5:
+      horizontal_lines[index] = x[0]
+    else:
+      vertical_lines[index] = x[0]
+  return horizontal_lines, vertical_lines
+
+
 def main(flags):
   img = cv2.imread(flags.image)
   gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -20,21 +49,13 @@ def main(flags):
   lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
   lines = tf.reshape(lines, [-1, 2]).numpy()
   
-  horizontal_indexes = tf.reshape(tf.where(lines[:, 1]), [-1])
-  horizontal_lines = lines[horizontal_indexes]
+  horizontal_lines, vertical_lines = split_lines(lines)
   
-  for rho, theta in horizontal_lines:
-    a = np.cos(theta)
-    b = np.sin(theta)
-    x0 = a * rho
-    y0 = b * rho
-    factor = 500
-    x1 = int(x0 + factor * (-b))
-    y1 = int(y0 + factor * (a))
-    x2 = int(x0 - factor * (-b))
-    y2 = int(y0 - factor * (a))
-    
-    cv2.line(img, (x1, y1), (x2, y2), (245, 0, 0), 1)
+  for rho in horizontal_lines:
+    add_horizontal_line(img, rho)
+  
+  for rho in vertical_lines:
+    add_vertical_line(img, rho)
   
   show(img)
 
