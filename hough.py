@@ -20,7 +20,10 @@ def main(flags):
   lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
   lines = tf.reshape(lines, [-1, 2]).numpy()
   
-  for rho, theta in lines:
+  horizontal_indexes = tf.reshape(tf.where(lines[:, 1]), [-1])
+  horizontal_lines = lines[horizontal_indexes]
+  
+  for rho, theta in horizontal_lines:
     a = np.cos(theta)
     b = np.sin(theta)
     x0 = a * rho
@@ -31,7 +34,7 @@ def main(flags):
     x2 = int(x0 - factor * (-b))
     y2 = int(y0 - factor * (a))
     
-    cv2.line(img, (x1, y1), (x2, y2), (245, 0, 0), 2)
+    cv2.line(img, (x1, y1), (x2, y2), (245, 0, 0), 1)
   
   show(img)
 
