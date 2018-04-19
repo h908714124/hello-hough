@@ -9,4 +9,4 @@
 
 ## Run
 
-    python hough.py --image=test/data/board.png
+    python hough.py test/data/board.png
