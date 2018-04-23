@@ -1,6 +1,8 @@
 from __future__ import print_function
 
+import os
 import sys
+from io import open
 
 import PIL.Image
 import cv2
@@ -73,22 +75,22 @@ def remove_outliers(lines):
   return result
 
 
-def pad_left(img, x1):
-  return np.pad(img, ((0, 0), (abs(x1), 0)), 'edge')
+def pad_left(img, x1, avg_brightness):
+  return np.pad(img, ((0, 0), (abs(x1), 0)), 'constant', constant_values=avg_brightness)
 
 
-def pad_right(img, x2):
+def pad_right(img, x2, avg_brightness):
   w = np.shape(img)[1]
-  return np.pad(img, ((0, 0), (0, abs(x2 - w))), 'edge')
+  return np.pad(img, ((0, 0), (0, abs(x2 - w))), 'constant', constant_values=avg_brightness)
 
 
-def pad_top(img, y1):
-  return np.pad(img, ((abs(y1), 0), (0, 0)), 'edge')
+def pad_top(img, y1, avg_brightness):
+  return np.pad(img, ((abs(y1), 0), (0, 0)), 'constant', constant_values=avg_brightness)
 
 
-def pad_bottom(img, y2):
+def pad_bottom(img, y2, avg_brightness):
   h = np.shape(img)[0]
-  return np.pad(img, (0, (abs(y2 - h)), (0, 0)), 'edge')
+  return np.pad(img, (0, (abs(y2 - h)), (0, 0)), 'constant', constant_values=avg_brightness)
 
 
 def initial_tile(img, x1, x2, y1, y2):
@@ -111,6 +113,7 @@ def get_tiles(img, horizontal_lines, vertical_lines):
   result_pos = 0
   h = np.shape(img)[0]
   w = np.shape(img)[1]
+  avg_brightness = np.average(img)
   for hline in iter(horizontal_lines):
     for vline in iter(vertical_lines):
       y1 = int(hline - (mean_hdiff / 2))
@@ -119,13 +122,13 @@ def get_tiles(img, horizontal_lines, vertical_lines):
       x2 = int(vline + (mean_vdiff / 2))
       tile = initial_tile(img, x1, x2, y1, y2)
       if (x1 < 0):
-        tile = pad_left(img, x1)
+        tile = pad_left(img, x1, avg_brightness)
       if (x2 > w):
-        tile = pad_right(img, x2)
+        tile = pad_right(img, x2, avg_brightness)
       if (y1 < 0):
-        tile = pad_top(img, y1)
+        tile = pad_top(img, y1, avg_brightness)
       if (y2 > h):
-        tile = pad_bottom(img, y2)
+        tile = pad_bottom(img, y2, avg_brightness)
       pil_image = PIL.Image.fromarray(tile)
       pil_image = pil_image.resize([32, 32], PIL.Image.BILINEAR)
       result[result_pos] = np.asarray(pil_image, dtype=np.float32)
@@ -156,8 +159,50 @@ def group_lines(lines):
   return horizontal_lines, vertical_lines
 
 
+def bytes_from_file(filename, chunksize=8192):
+  with open(filename, 'rb') as f:
+    while True:
+      chunk = f.read(chunksize)
+      if chunk:
+        for b in chunk:
+          yield b
+      else:
+        break
+
+
+def read_images(filename):
+  i = 0
+  buf = np.ndarray((32, 32), dtype=np.int8)
+  for b in bytes_from_file(filename):
+    bb = ord(b)
+    buf[i // 32, i % 32] = bb
+    i += 1
+    if i == 1024:
+      yield buf
+      buf = np.ndarray((32, 32))
+      i = 0
+
+
 def main(flags):
-  img = cv2.imread(flags.image)
+  if flags.read_dataset:
+    white = {60, 174, 288}
+    black = {72, 186, 300}
+    i = 0
+    for image in read_images(flags.dataset_images):
+      if i in white or i in black:
+        show(image)
+      i += 1
+    return
+  
+  flags_image = flags.image
+  if flags_image is None:
+    raise Exception("Missing argument 'image'")
+  
+  if os.path.isfile(flags_image):
+    img = cv2.imread(flags_image)
+  else:
+    raise ValueError('Path provided is not a valid file: {}'.format(flags_image))
+  
   gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   edges = cv2.Canny(gray, 50, 150, apertureSize=3)
   
@@ -171,8 +216,13 @@ def main(flags):
   horizontal_lines = remove_outliers(horizontal_lines)
   
   tiles = get_tiles(gray, horizontal_lines, vertical_lines)
-  show(tiles[0])
-  show(tiles[60])
+  
+  if (flags.create_dataset):
+    with open(flags.dataset_images, 'wb') as f:
+      for tile in iter(tiles):
+        for row in iter(tile):
+          for b in iter(row):
+            f.write(chr(b))
   
   for y in horizontal_lines:
     add_horizontal_line(img, int(y))

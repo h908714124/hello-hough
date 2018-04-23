@@ -7,6 +7,10 @@
 
     pip install --user pillow opencv-python tensorflow numpy matplotlib
 
-## Run
+## Create dataset
 
-    python hough.py test/data/board.png
+    python hough.py test/data/board.png --create_dataset --dataset_images=/tmp/images
+
+## Read dataset
+
+    python hough.py --read_dataset --dataset_images=/tmp/images
