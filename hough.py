@@ -2,11 +2,10 @@ from __future__ import print_function
 
 import sys
 
+import PIL.Image
 import cv2
 import numpy as np
 import tensorflow as tf
-
-import PIL.Image
 
 from hello.arg_parser import ArgParser
 from hello.im_debug import show
@@ -17,12 +16,12 @@ tf.enable_eager_execution(config=None, device_policy=None)
 
 
 def add_horizontal_line(img, y):
-  width = np.shape(img)[0]
+  width = np.shape(img)[1]
   cv2.line(img, (0, y), (width, y), (245, 0, 0), 1)
 
 
 def add_vertical_line(img, x):
-  height = np.shape(img)[1]
+  height = np.shape(img)[0]
   cv2.line(img, (x, 0), (x, height), (0, 245, 0), 1)
 
 
@@ -74,6 +73,34 @@ def remove_outliers(lines):
   return result
 
 
+def pad_left(img, x1):
+  return np.pad(img, ((0, 0), (abs(x1), 0)), 'edge')
+
+
+def pad_right(img, x2):
+  w = np.shape(img)[1]
+  return np.pad(img, ((0, 0), (0, abs(x2 - w))), 'edge')
+
+
+def pad_top(img, y1):
+  return np.pad(img, ((abs(y1), 0), (0, 0)), 'edge')
+
+
+def pad_bottom(img, y2):
+  h = np.shape(img)[0]
+  return np.pad(img, (0, (abs(y2 - h)), (0, 0)), 'edge')
+
+
+def initial_tile(img, x1, x2, y1, y2):
+  h = np.shape(img)[0]
+  w = np.shape(img)[1]
+  y1 = max(y1, 0)
+  y2 = min(y2, h)
+  x1 = max(x1, 0)
+  x2 = min(x2, w)
+  return img[y1:y2, x1:x2]
+
+
 # 4x4x3 matrix: A = np.arange(48).reshape(-1,3,4)
 def get_tiles(img, horizontal_lines, vertical_lines):
   hdiff = np.diff(horizontal_lines)
@@ -82,16 +109,26 @@ def get_tiles(img, horizontal_lines, vertical_lines):
   mean_vdiff = np.mean(vdiff)
   result = np.zeros([361, 32, 32], dtype=np.float32)
   result_pos = 0
-  for i_h, hline in enumerate(horizontal_lines):
-    for i_v, vline in enumerate(vertical_lines):
-      y1 = int(hline - mean_hdiff) / 2
-      y2 = int(hline + mean_hdiff) / 2
-      x1 = int(vline - mean_vdiff) / 2
-      x2 = int(vline + mean_vdiff) / 2
-      full_size_tile = img[y1:y2, x1:x2]
-      pil_image = PIL.Image.fromarray(full_size_tile)
-      resized = pil_image.resize([32, 32], PIL.Image.BILINEAR)
-      result[result_pos] = np.asarray(resized, dtype=np.float32)
+  h = np.shape(img)[0]
+  w = np.shape(img)[1]
+  for hline in iter(horizontal_lines):
+    for vline in iter(vertical_lines):
+      y1 = int(hline - (mean_hdiff / 2))
+      y2 = int(hline + (mean_hdiff / 2))
+      x1 = int(vline - (mean_vdiff / 2))
+      x2 = int(vline + (mean_vdiff / 2))
+      tile = initial_tile(img, x1, x2, y1, y2)
+      if (x1 < 0):
+        tile = pad_left(img, x1)
+      if (x2 > w):
+        tile = pad_right(img, x2)
+      if (y1 < 0):
+        tile = pad_top(img, y1)
+      if (y2 > h):
+        tile = pad_bottom(img, y2)
+      pil_image = PIL.Image.fromarray(tile)
+      pil_image = pil_image.resize([32, 32], PIL.Image.BILINEAR)
+      result[result_pos] = np.asarray(pil_image, dtype=np.float32)
       result_pos += 1
   return result
 
@@ -132,10 +169,11 @@ def main(flags):
   horizontal_lines = remove_duplicate_lines(np.shape(img)[1], horizontal_lines)
   vertical_lines = remove_outliers(vertical_lines)
   horizontal_lines = remove_outliers(horizontal_lines)
-
-  tiles = get_tiles(img, horizontal_lines, vertical_lines)
+  
+  tiles = get_tiles(gray, horizontal_lines, vertical_lines)
   show(tiles[0])
-
+  show(tiles[60])
+  
   for y in horizontal_lines:
     add_horizontal_line(img, int(y))
   
