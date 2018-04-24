@@ -13,6 +13,8 @@ from hello.arg_parser import ArgParser
 from hello.im_debug import show
 
 grid_size = 19
+white = {60, 174, 288}
+black = {72, 186, 300}
 
 tf.enable_eager_execution(config=None, device_policy=None)
 
@@ -109,7 +111,7 @@ def get_tiles(img, horizontal_lines, vertical_lines):
   mean_hdiff = np.mean(hdiff)
   vdiff = np.diff(vertical_lines)
   mean_vdiff = np.mean(vdiff)
-  result = np.zeros([361, 32, 32], dtype=np.float32)
+  result = np.zeros([361, 28, 28], dtype=np.float32)
   result_pos = 0
   h = np.shape(img)[0]
   w = np.shape(img)[1]
@@ -130,7 +132,7 @@ def get_tiles(img, horizontal_lines, vertical_lines):
       if (y2 > h):
         tile = pad_bottom(img, y2, avg_brightness)
       pil_image = PIL.Image.fromarray(tile)
-      pil_image = pil_image.resize([32, 32], PIL.Image.BILINEAR)
+      pil_image = pil_image.resize([28, 28], PIL.Image.BILINEAR)
       result[result_pos] = np.asarray(pil_image, dtype=np.float32)
       result_pos += 1
   return result
@@ -172,21 +174,20 @@ def bytes_from_file(filename, chunksize=8192):
 
 def read_images(filename):
   i = 0
-  buf = np.ndarray((32, 32), dtype=np.int8)
+  buf = np.ndarray(784, dtype=np.float32)
   for b in bytes_from_file(filename):
-    bb = ord(b)
-    buf[i // 32, i % 32] = bb
+    buf[i] = ord(b)
     i += 1
-    if i == 1024:
+    if i == 784:
+      buf = np.reshape(buf, [28, 28])
+      buf = buf / 256.0
       yield buf
-      buf = np.ndarray((32, 32))
+      buf = np.ndarray(784, dtype=np.float32)
       i = 0
 
 
 def main(flags):
   if flags.read_dataset:
-    white = {60, 174, 288}
-    black = {72, 186, 300}
     i = 0
     for image in read_images(flags.dataset_images):
       if i in white or i in black:
@@ -219,10 +220,17 @@ def main(flags):
   
   if (flags.create_dataset):
     with open(flags.dataset_images, 'wb') as f:
+      i = 0
+      for image in read_images(flags.dataset_images):
+        if i in white or i in black:
+          show(image)
+        i += 1
+
+    with open(flags.dataset_images, 'wb') as f:
       for tile in iter(tiles):
         for row in iter(tile):
           for b in iter(row):
-            f.write(chr(b))
+            f.write(chr(int(b)))
   
   for y in horizontal_lines:
     add_horizontal_line(img, int(y))
