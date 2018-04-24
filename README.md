@@ -18,3 +18,7 @@
 ## Read dataset
 
     python3 hough.py --read_dataset --dataset_images=/tmp/images
+
+## Show lines
+
+    python3 hough.py test/data/board.png --show_lines

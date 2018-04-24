@@ -11,6 +11,9 @@ class ArgParser(argparse.ArgumentParser):
       '--create_dataset', action="store_true"
     )
     self.add_argument(
+      '--show_lines', action="store_true"
+    )
+    self.add_argument(
       '--read_dataset', action="store_true"
     )
     self.add_argument(
@@ -19,4 +22,3 @@ class ArgParser(argparse.ArgumentParser):
     self.add_argument(
       '--dataset_labels', default='/tmp/labels'
     )
-
