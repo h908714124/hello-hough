@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import sys
+import struct
 from io import open
 
 import PIL.Image
@@ -176,12 +177,13 @@ def read_images(filename):
   i = 0
   buf = np.ndarray(784, dtype=np.float32)
   for b in bytes_from_file(filename):
-    buf[i] = ord(b)
+    fb = float(b)
+    buf[i] = fb
     i += 1
     if i == 784:
-      buf = np.reshape(buf, [28, 28])
-      buf = buf / 256.0
-      yield buf
+      f_buf = np.reshape(buf, [28, 28])
+      f_buf = f_buf / 256.0
+      yield f_buf
       buf = np.ndarray(784, dtype=np.float32)
       i = 0
 
@@ -218,19 +220,22 @@ def main(flags):
   
   tiles = get_tiles(gray, horizontal_lines, vertical_lines)
   
-  if (flags.create_dataset):
-    with open(flags.dataset_images, 'wb') as f:
-      i = 0
-      for image in read_images(flags.dataset_images):
-        if i in white or i in black:
-          show(image)
-        i += 1
-
+  if flags.create_dataset:
+    with open(flags.dataset_labels, 'wb') as f:
+      for i in range(0, 361):
+        if i in white:
+          f.write(bytearray([2]))
+        elif i in black:
+          f.write(bytearray([1]))
+        else:
+          f.write(bytearray([0]))
+    
     with open(flags.dataset_images, 'wb') as f:
       for tile in iter(tiles):
-        for row in iter(tile):
-          for b in iter(row):
-            f.write(chr(int(b)))
+        flat_tile = np.reshape(tile, [-1])
+        byte_tile = flat_tile.astype(int)
+        byte_tile = byte_tile.tolist()
+        f.write(bytes(byte_tile))
   
   for y in horizontal_lines:
     add_horizontal_line(img, int(y))
