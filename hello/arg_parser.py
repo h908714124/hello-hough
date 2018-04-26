@@ -22,3 +22,15 @@ class ArgParser(argparse.ArgumentParser):
     self.add_argument(
       '--dataset_labels', default='/tmp/labels'
     )
+    self.add_argument(
+      '--train', action="store_true"
+    )
+    self.add_argument(
+      '--predict', action="store_true"
+    )
+    self.add_argument(
+      "--model_dir", default="/tmp/go_model"
+    )
+    self.add_argument(
+      "--export_dir", default="trained_model"
+    )
