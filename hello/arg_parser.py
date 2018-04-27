@@ -5,32 +5,32 @@ class ArgParser(argparse.ArgumentParser):
   def __init__(self):
     super(ArgParser, self).__init__()
     self.add_argument(
-      'image', nargs='?'
+      '--image'
     )
     self.add_argument(
-      '--create_dataset', action="store_true"
+      '--create_dataset', action='store_true'
     )
     self.add_argument(
-      '--show_lines', action="store_true"
+      '--show_lines', action='store_true'
     )
     self.add_argument(
-      '--read_dataset', action="store_true"
+      '--read_dataset', action='store_true'
     )
     self.add_argument(
-      '--dataset_images', default='/tmp/images'
+      '--train_images'
     )
     self.add_argument(
-      '--dataset_labels', default='/tmp/labels'
+      '--train_labels'
     )
     self.add_argument(
-      '--train', action="store_true"
+      '--train', action='store_true'
     )
     self.add_argument(
-      '--predict', action="store_true"
+      '--predict', action='store_true'
     )
     self.add_argument(
-      "--model_dir", default="/tmp/go_model"
+      '--model_dir', default='/tmp/go_model'
     )
     self.add_argument(
-      "--export_dir", default="trained_model"
+      '--export_dir'
     )

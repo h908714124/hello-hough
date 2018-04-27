@@ -210,8 +210,13 @@ def show_lines(img, horizontal_lines, vertical_lines):
     add_vertical_line(img, int(x))
   show(img)
   
-def create_dataset(tiles, labels='', images=''):
-  with open(labels, 'wb') as f:
+def create_dataset(tiles, flags):
+  if flags.train_labels is None:
+    raise Exception("Missing argument 'train_labels'")
+  if flags.train_labels is None:
+    raise Exception("Missing argument 'train_images'")
+
+  with open(flags.train_labels, 'wb') as f:
     for i in range(0, 361):
       if i in white:
         f.write(bytes([2]))
@@ -219,11 +224,14 @@ def create_dataset(tiles, labels='', images=''):
         f.write(bytes([1]))
       else:
         f.write(bytes([0]))
+        
+  print("Wrote", flags.train_labels)
   
-  with open(images, 'wb') as f:
+  with open(flags.train_images, 'wb') as f:
     for tile in iter(tiles):
       flat_tile = np.reshape(tile, [-1])
       byte_tile = flat_tile.astype(int)
       byte_tile = byte_tile.tolist()
       f.write(bytes(byte_tile))
 
+  print("Wrote", flags.train_images)
