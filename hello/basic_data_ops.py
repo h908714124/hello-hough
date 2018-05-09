@@ -117,16 +117,18 @@ def get_tiles(img, horizontal_lines, vertical_lines):
       x1 = int(vline - (mean_vdiff / 2))
       x2 = int(vline + (mean_vdiff / 2))
       tile = initial_tile(img, x1, x2, y1, y2)
-      if (x1 < 0):
+      if x1 < 0:
         tile = pad_left(img, x1, avg_brightness)
-      if (x2 > w):
+      if x2 > w:
         tile = pad_right(img, x2, avg_brightness)
-      if (y1 < 0):
+      if y1 < 0:
         tile = pad_top(img, y1, avg_brightness)
-      if (y2 > h):
+      if y2 > h:
         tile = pad_bottom(img, y2, avg_brightness)
       pil_image = PIL.Image.fromarray(tile)
       pil_image = pil_image.resize([28, 28], PIL.Image.BILINEAR)
+      pil_image.save('test/tiles/' + str(result_pos) + '.png')
+
       result[result_pos] = np.asarray(pil_image, dtype=np.float32)
       result_pos += 1
   return result

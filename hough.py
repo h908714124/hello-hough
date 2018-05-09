@@ -24,7 +24,6 @@ def load(input_file):
   for i in range(0, 28):
     for j in range(0, 28):
       m[i, j] = 0.00390625 * img.getpixel((j, i))
-  show(m)
   return [m]
 
 
@@ -36,8 +35,9 @@ def predict(flags):
   list_of_files = glob.glob(flags.export_dir + '/*')
   latest_file = max(list_of_files, key=os.path.getctime)
   predict_fn = predictor.from_saved_model(latest_file)
-  predictions = predict_fn({'image': load(flags.image)})
-  print('Prediction: %d' % (np.argmax(predictions['probabilities'][0])))
+  for n in range(361):
+    predictions = predict_fn({'image': load('test/tiles/' + str(n) + '.png')})
+    print('image: %03s Prediction: %s' % (n, predictions['probabilities']))
 
 
 def train(flags):
@@ -54,15 +54,22 @@ def train(flags):
   
   def train_input_fn():
     ds = dataset(labels=flags.train_labels, images=flags.train_images)
-    ds = ds.cache().shuffle(buffer_size=50000).batch(10)
+    ds = ds.cache().shuffle(buffer_size=50000).batch(361)
     return ds
+
+  def eval_input_fn():
+    return dataset(labels=flags.train_labels, images=flags.train_images).batch(
+      361).make_one_shot_iterator().get_next()
   
   go_classifier = tf.estimator.Estimator(
     model_fn=cnn_model_fn,
     model_dir=flags.model_dir)
-  
-  go_classifier.train(input_fn=train_input_fn)
-  
+
+  for _ in range(200):
+    go_classifier.train(input_fn=train_input_fn)
+    eval_results = go_classifier.evaluate(input_fn=eval_input_fn)
+    print('\nEvaluation results:\n\t%s\n' % eval_results)
+
   image = tf.placeholder(tf.float32, [None, 28, 28])
   input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
     'image': image,
