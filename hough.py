@@ -48,9 +48,9 @@ def train(flags):
   if flags.train_images is None:
     raise Exception("Missing argument 'train_images'")
   if not os.path.isfile(flags.train_labels):
-    raise Exception("Training labels don't exist. Run --train first.")
+    raise Exception("Training labels don't exist. Run --create_dataset first.")
   if not os.path.isfile(flags.train_images):
-    raise Exception("Training images don't exist. Run --train first.")
+    raise Exception("Training images don't exist. Run --create_dataset first.")
   
   def train_input_fn():
     ds = dataset(labels=flags.train_labels, images=flags.train_images)
