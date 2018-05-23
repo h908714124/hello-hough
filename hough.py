@@ -13,8 +13,11 @@ from tensorflow.contrib import predictor
 from hello.arg_parser import ArgParser
 from hello.basic_data_ops import show_dataset, find_lines, get_tiles, show_lines, create_dataset
 from hello.dataset import dataset
-from hello.im_debug import show
 from hello.model_def import cnn_model_fn
+
+TRAINING_ROUNDS = 650
+
+BATCH_SIZE = 361
 
 
 def load(input_file):
@@ -35,9 +38,9 @@ def predict(flags):
   list_of_files = glob.glob(flags.export_dir + '/*')
   latest_file = max(list_of_files, key=os.path.getctime)
   predict_fn = predictor.from_saved_model(latest_file)
-  for n in range(361):
-    predictions = predict_fn({'image': load('test/tiles/' + str(n) + '.png')})
-    print('image: %03s Prediction: %s' % (n, predictions['probabilities']))
+  img = flags.image
+  predictions = predict_fn({'image': load(img)})
+  print('image: %03s Prediction: %s' % (img, np.argmax(predictions['probabilities'][0])))
 
 
 def train(flags):
@@ -51,21 +54,21 @@ def train(flags):
     raise Exception("Training labels don't exist. Run --create_dataset first.")
   if not os.path.isfile(flags.train_images):
     raise Exception("Training images don't exist. Run --create_dataset first.")
-  
+
   def train_input_fn():
     ds = dataset(labels=flags.train_labels, images=flags.train_images)
-    ds = ds.cache().shuffle(buffer_size=50000).batch(361)
+    ds = ds.cache().shuffle(buffer_size=500).batch(BATCH_SIZE)
     return ds
 
   def eval_input_fn():
     return dataset(labels=flags.train_labels, images=flags.train_images).batch(
-      361).make_one_shot_iterator().get_next()
-  
+      BATCH_SIZE).make_one_shot_iterator().get_next()
+
   go_classifier = tf.estimator.Estimator(
     model_fn=cnn_model_fn,
     model_dir=flags.model_dir)
 
-  for _ in range(200):
+  for _ in range(TRAINING_ROUNDS):
     go_classifier.train(input_fn=train_input_fn)
     eval_results = go_classifier.evaluate(input_fn=eval_input_fn)
     print('\nEvaluation results:\n\t%s\n' % eval_results)
@@ -82,30 +85,29 @@ def main(flags):
   if flags.predict:
     predict(flags)
     return
-  
+
   if flags.train:
     train(flags)
     return
-  
+
   if flags.read_dataset:
     show_dataset(flags.train_images)
     return
-  
+
   if flags.image is None:
     raise Exception("Missing argument 'image'")
-  
+
   if os.path.isfile(flags.image):
     img = cv2.imread(flags.image)
   else:
     raise ValueError('Path provided is not a valid file: {}'.format(flags.image))
-  
+
   gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   horizontal_lines, vertical_lines = find_lines(img, gray)
   tiles = get_tiles(gray, horizontal_lines, vertical_lines)
-  
-  if flags.create_dataset:
-    create_dataset(tiles, flags)
-  
+
+  if flags.create_dataset: create_dataset(tiles, flags)
+
   if flags.show_lines:
     show_lines(img, horizontal_lines, vertical_lines)
 

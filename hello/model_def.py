@@ -1,4 +1,3 @@
-import cv2
 import tensorflow as tf
 
 def cnn_model_fn(features, labels, mode):
@@ -7,17 +6,15 @@ def cnn_model_fn(features, labels, mode):
   """
   image = features['image'] if isinstance(features, dict) else features
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    image = tf.Print(image, [tf.shape(image)], message='features: ', first_n=1, summarize=11)
-  
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    labels = tf.Print(labels, [tf.shape(labels)], message='labels: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   image = tf.Print(image, [tf.shape(image)], message='features: ', first_n=1, summarize=11)
+  #   labels = tf.Print(labels, [tf.shape(labels)], message='labels: ', first_n=1, summarize=11)
   
   # Input Layer
   input_layer = tf.reshape(image, [-1, 28, 28, 1])
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    input_layer = tf.Print(input_layer, [tf.shape(input_layer)], message='input_layer: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   input_layer = tf.Print(input_layer, [tf.shape(input_layer)], message='input_layer: ', first_n=1, summarize=11)
   
   # Convolutional Layer #1
   conv1 = tf.layers.conv2d(
@@ -27,14 +24,14 @@ def cnn_model_fn(features, labels, mode):
     padding="same",
     activation=tf.nn.relu)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    conv1 = tf.Print(conv1, [tf.shape(conv1)], message='conv1: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   conv1 = tf.Print(conv1, [tf.shape(conv1)], message='conv1: ', first_n=1, summarize=11)
   
   # Pooling Layer #1
   pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    pool1 = tf.Print(pool1, [tf.shape(pool1)], message='pool1: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   pool1 = tf.Print(pool1, [tf.shape(pool1)], message='pool1: ', first_n=1, summarize=11)
   
   # Convolutional Layer #2 and Pooling Layer #2
   conv2 = tf.layers.conv2d(
@@ -44,36 +41,36 @@ def cnn_model_fn(features, labels, mode):
     padding="same",
     activation=tf.nn.relu)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    conv2 = tf.Print(conv2, [tf.shape(conv2)], message='conv2: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   conv2 = tf.Print(conv2, [tf.shape(conv2)], message='conv2: ', first_n=1, summarize=11)
   
   pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    pool2 = tf.Print(pool2, [tf.shape(pool2)], message='pool2: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   pool2 = tf.Print(pool2, [tf.shape(pool2)], message='pool2: ', first_n=1, summarize=11)
   
   # Dense Layer
   pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    pool2_flat = tf.Print(pool2_flat, [tf.shape(pool2_flat)], message='pool2_flat: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   pool2_flat = tf.Print(pool2_flat, [tf.shape(pool2_flat)], message='pool2_flat: ', first_n=1, summarize=11)
   
   dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    dense = tf.Print(dense, [tf.shape(dense)], message='dense: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   dense = tf.Print(dense, [tf.shape(dense)], message='dense: ', first_n=1, summarize=11)
   
   dropout = tf.layers.dropout(
     inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    dropout = tf.Print(dropout, [tf.shape(dropout)], message='dropout: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   dropout = tf.Print(dropout, [tf.shape(dropout)], message='dropout: ', first_n=1, summarize=11)
   
   # Logits Layer
   logits = tf.layers.dense(inputs=dropout, units=3)
   
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    logits = tf.Print(logits, [tf.shape(logits)], message='logits: ', first_n=1, summarize=11)
+  # if mode == tf.estimator.ModeKeys.TRAIN:
+  #   logits = tf.Print(logits, [tf.shape(logits)], message='logits: ', first_n=1, summarize=11)
   
   predictions = {
     # Generate predictions (for PREDICT and EVAL mode)
@@ -96,7 +93,7 @@ def cnn_model_fn(features, labels, mode):
   
   # Configure the Training Op (for TRAIN mode)
   if mode == tf.estimator.ModeKeys.TRAIN:
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.03)
     train_op = optimizer.minimize(
       loss=loss,
       global_step=tf.train.get_global_step())
