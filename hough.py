@@ -36,6 +36,8 @@ def predict(flags):
   if flags.export_dir is None:
     raise Exception("Missing argument 'export_dir'")
   list_of_files = glob.glob(flags.export_dir + '/*')
+  if not list_of_files:
+    raise Exception("Training data is missing. Run --train first")
   latest_file = max(list_of_files, key=os.path.getctime)
   predict_fn = predictor.from_saved_model(latest_file)
   img = flags.image
@@ -51,9 +53,9 @@ def train(flags):
   if flags.train_images is None:
     raise Exception("Missing argument 'train_images'")
   if not os.path.isfile(flags.train_labels):
-    raise Exception("Training labels don't exist. Run --create_dataset first.")
+    raise Exception("Training labels are missing. Run --create_dataset first.")
   if not os.path.isfile(flags.train_images):
-    raise Exception("Training images don't exist. Run --create_dataset first.")
+    raise Exception("Training images are missing. Run --create_dataset first.")
 
   def train_input_fn():
     ds = dataset(labels=flags.train_labels, images=flags.train_images)
